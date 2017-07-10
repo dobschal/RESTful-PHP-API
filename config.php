@@ -24,17 +24,39 @@ $config =
             },
             "transform" => 
             [ 
-                "password" => function( $oldValue )
+                "password" => function( $oldValue, $isRequest )
                 {
-                    return hash( "SHA512", $oldValue );
+                    if($isRequest)
+                        return hash( "SHA512", $oldValue );
+                    else
+                        return "";
                 }
             ]
+        ],
+        "files" => [
+
+            /**
+             *  Standard permission:
+             *  Everybody can read
+             *  Authorized users can create
+             *  Owners can update or delete
+             */
+            "permission" => function( $user, $body, $method)
+            {
+                switch ($method) {
+                    case "POST": return isset($user->id);
+                    case 'PUT': return $user->isOwner;
+                    case 'DELETE': return $user->isOwner;
+                    default: return true;
+                }
+            }
         ],
         "article" => 
         [
             "permission" => function( $user, $body, $method )
             {
                 switch ($method) {
+                    case "POST": return isset($user->id);
                     case 'PUT': return $user->isOwner;
                     case 'DELETE': return $user->isOwner;
                     default: return true;

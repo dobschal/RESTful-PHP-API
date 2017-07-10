@@ -37,7 +37,7 @@ if(isset($input))
     {
         if(isset($config["resources"][$table], $config["resources"][$table]["transform"], $config["resources"][$table]["transform"][$key2]))
         {
-            $input[ $key2 ] = $config["resources"][$table]["transform"][$key2]( $value );
+            $input[ $key2 ] = $config["resources"][$table]["transform"][$key2]( $value, true );
         }
     }
 }
@@ -114,7 +114,7 @@ else
 /**
  *  Handle File Upload
  */
-if(isset($_FILES["upfile"]))
+if($table === "files" && $method === "POST" && isset($_FILES["upfile"]))
 {
     makeDirIfNotExist("/files");
     makeDirIfNotExist( "/data/files" );
@@ -138,7 +138,9 @@ if(isset($_FILES["upfile"]))
         true
     ))
         response(["error" => 'Invalid file format.'], 400);
-    $id = uniqid();
+    $id = $key ? $key : uniqid();
+    if(file_exists( getFileName("files", $id) ))
+        response(["error" => "File with id '{$id}' already exists."], 409);
     $filename = sprintf( 'files/%s.%s', $id, $ext );
     if(!file_put_contents( getFileName("files", $id), json_encode([
         "id" => $id,
@@ -151,6 +153,10 @@ if(isset($_FILES["upfile"]))
         response(["error" => 'Failed to move uploaded file.'], 500);
     response(["success" => "File saved.", "filename" => $filename], 200);
 }
+else if($table === "files" && $method === "POST")
+{
+    response(["error" => "Missing files in upload."], 400);
+}
 
 
 
@@ -161,7 +167,12 @@ switch ($method) {
 	case 'GET':
 	    if($key)
 	    {
-            response( getArrayFromFile( getFileName( $table, $key ) ), 200);
+            $data = getArrayFromFile( getFileName( $table, $key ) );
+            foreach ($data as $key2 => $value) {
+                if(isset($config["resources"][$table], $config["resources"][$table]["transform"], $config["resources"][$table]["transform"][$key2]))
+                    $data[ $key2 ] = $config["resources"][$table]["transform"][$key2]( $value, false );
+            }            
+            response( $data, 200 );
         }
         else
         {
