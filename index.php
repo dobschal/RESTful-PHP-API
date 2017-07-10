@@ -51,7 +51,7 @@ $user = [];
 if($table === "auth")
 {
     $id = $input["username"];
-    $password = $config["resources"]["user"]["transform"][ "password" ]( $input["password"] );
+    $password = $config["resources"]["user"]["transform"][ "password" ]( $input["password"], true );
     $user = getArrayFromFile( getFileName( "user", $id ) );
     if($user["password"] !== $password) 
         response(["error" => "Wrong credentials."], 401);
